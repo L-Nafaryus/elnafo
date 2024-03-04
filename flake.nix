@@ -49,10 +49,28 @@
         });
 
         devShells = forAllSystems (system: {
-            default = let pkgs = nixpkgsFor.${system}; in pkgs.mkShell {
-                nativeBuildInputs = [ 
+            default = let 
+                pkgs = nixpkgsFor.${system};
+                #db_host = "";
+                db_name = "elnafo";
+                db_user = "elnafo";
+                db_password = "test";
+                db_path = "temp/elnafo";
+            in pkgs.mkShell {
+                buildInputs = [ 
                     fenix.packages.${system}.complete.toolchain 
+                    pkgs.ripgrep
+                    pkgs.postgresql
+                    pkgs.diesel-cli
                 ];
+
+                shellHook = ''
+                    trap "pg_ctl -D ${db_path} stop" EXIT
+
+                    [ ! -d $(pwd)/${db_path} ] && initdb -D $(pwd)/${db_path} -U ${db_user}
+                    pg_ctl -D $(pwd)/${db_path} -l $(pwd)/${db_path}/db.log -o "--unix_socket_directories=$(pwd)/${db_path}" start
+                    #[ ! "$(psql -h $(pwd)/${db_path} -U ${db_user} -l | rg '^ ${db_name}')" ] && createdb -h $(pwd)/${db_path} -U ${db_user} ${db_name}
+                '';
             };
             elnafo = crane.lib.${system}.devShell {
                 checks = self.checks.${system};
