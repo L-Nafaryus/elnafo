@@ -1,7 +1,7 @@
-use crate::schema;
+use crate::db::schema;
 use diesel::prelude::*;
 
-#[derive(Queryable, Selectable)]
+#[derive(serde::Serialize, Queryable, Selectable)]
 #[diesel(table_name = schema::users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct User {
@@ -13,7 +13,7 @@ pub struct User {
     pub is_admin: bool,
 }
 
-#[derive(Insertable)]
+#[derive(serde::Deserialize, Insertable)]
 #[diesel(table_name = schema::users)]
 pub struct NewUser<'a> {
     pub login: &'a str,

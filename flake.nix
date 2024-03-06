@@ -62,6 +62,8 @@
                     pkgs.ripgrep
                     pkgs.postgresql
                     pkgs.diesel-cli
+                    pkgs.cargo-watch
+                    pkgs.mold
                 ];
 
                 shellHook = ''
