@@ -63,7 +63,7 @@
                     pkgs.postgresql
                     pkgs.diesel-cli
                     pkgs.cargo-watch
-                    pkgs.mold
+                    pkgs.mold-wrapped
                 ];
 
                 shellHook = ''
