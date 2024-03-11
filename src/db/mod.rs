@@ -26,10 +26,10 @@ pub async fn run_migrations(pool: &Pool) {
 
 pub fn create_user(
     connection: &mut PgConnection,
-    login: &str,
-    hashed_password: &str,
-    name: &str,
-    email: &str,
+    login: String,
+    hashed_password: String,
+    name: String,
+    email: String,
     is_admin: bool,
 ) -> User {
     use crate::db::schema::users;

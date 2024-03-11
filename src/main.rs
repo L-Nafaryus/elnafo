@@ -1,19 +1,26 @@
-mod config;
-mod db;
+pub mod api;
+pub mod config;
+pub mod db;
+pub mod error_handle;
+pub mod state;
 
-use axum::{extract::State, http::StatusCode, response::Json, routing::get, Router};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    middleware,
+    response::Json,
+    routing::{get, post},
+    Router,
+};
 use diesel::RunQueryDsl;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::{env, net::Ipv4Addr};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::Config;
-use db::{create_user, models::User};
-
-pub struct AppState {
-    database: db::Pool,
-    config: Config,
-}
+use crate::db::{create_user, models::User};
+use crate::error_handle::*;
+use crate::state::AppState;
 
 #[tokio::main]
 async fn main() {
@@ -33,10 +40,10 @@ async fn main() {
 
     db::run_migrations(&pool).await;
 
-    let state = AppState {
+    let state = Arc::new(AppState {
         database: pool.clone(),
         config: config.clone(),
-    };
+    });
 
     let address: SocketAddr = format!("{}:{}", config.server.address, config.server.port)
         .parse()
@@ -45,8 +52,19 @@ async fn main() {
     let lister = tokio::net::TcpListener::bind(&address).await.unwrap();
 
     let app = Router::new()
+        .route("/api/v1/healthcheck", get(api::v1::healthcheck))
         .route("/api/v1/users", get(users))
-        .with_state(pool);
+        .route("/api/v1/register_user", post(api::v1::register_user))
+        .route("/api/v1/login_user", post(api::v1::login_user))
+        .route("/api/v1/logout_user", get(api::v1::logout_user))
+        .route(
+            "/api/v1/me",
+            get(api::v1::me).route_layer(middleware::from_fn_with_state(
+                state.clone(),
+                api::v1::jwt_auth,
+            )),
+        )
+        .with_state(state);
 
     println!("listening on http://{}", address);
 
@@ -56,10 +74,12 @@ async fn main() {
         .unwrap();
 }
 
-async fn users(State(pool): State<db::Pool>) -> Result<Json<Vec<User>>, (StatusCode, String)> {
+async fn users(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<User>>, (StatusCode, Json<serde_json::Value>)> {
     use db::schema::users::dsl::*;
 
-    let conn = pool.get().await.unwrap();
+    let conn = state.database.get().await.unwrap();
 
     let result = conn
         .interact(move |conn| users.load(conn))
@@ -70,22 +90,6 @@ async fn users(State(pool): State<db::Pool>) -> Result<Json<Vec<User>>, (StatusC
     Ok(Json(result))
 }
 
-fn init_tracing() {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "example_tokio_postgres=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-}
-
-fn internal_error<E>(err: E) -> (StatusCode, String)
-where
-    E: std::error::Error,
-{
-    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-}
 /*
     create_user(
         connection,
