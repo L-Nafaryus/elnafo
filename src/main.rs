@@ -6,7 +6,10 @@ pub mod state;
 
 use axum::{
     extract::State,
-    http::StatusCode,
+    http::{
+        header::{ACCEPT, AUTHORIZATION, ORIGIN},
+        HeaderValue, Method, StatusCode,
+    },
     middleware,
     response::Json,
     routing::{get, post},
@@ -16,6 +19,11 @@ use diesel::RunQueryDsl;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::{env, net::Ipv4Addr};
+use tower_http::{
+    cors::{Any, CorsLayer},
+    trace::{self, TraceLayer},
+};
+use tracing::Level;
 
 use crate::config::Config;
 use crate::db::{create_user, models::User};
@@ -24,7 +32,11 @@ use crate::state::AppState;
 
 #[tokio::main]
 async fn main() {
-    init_tracing();
+    //init_tracing();
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .compact()
+        .init();
 
     let config = Config::new();
     let database_url = format!(
@@ -51,11 +63,18 @@ async fn main() {
 
     let lister = tokio::net::TcpListener::bind(&address).await.unwrap();
 
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST])
+        .allow_headers(Any) //vec![ORIGIN, AUTHORIZATION, ACCEPT])
+        .allow_origin(Any);
+    //.allow_credentials(true); //"http://localhost:5173".parse::<HeaderValue>().unwrap());
+
     let app = Router::new()
-        .route("/api/v1/healthcheck", get(api::v1::healthcheck))
-        .route("/api/v1/users", get(users))
         .route("/api/v1/register_user", post(api::v1::register_user))
         .route("/api/v1/login_user", post(api::v1::login_user))
+        .layer(cors)
+        .route("/api/v1/healthcheck", get(api::v1::healthcheck))
+        .route("/api/v1/users", get(users))
         .route("/api/v1/logout_user", get(api::v1::logout_user))
         .route(
             "/api/v1/me",
@@ -63,6 +82,11 @@ async fn main() {
                 state.clone(),
                 api::v1::jwt_auth,
             )),
+        )
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
         )
         .with_state(state);
 

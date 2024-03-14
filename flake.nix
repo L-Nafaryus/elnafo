@@ -64,6 +64,7 @@
                     pkgs.diesel-cli
                     pkgs.cargo-watch
                     pkgs.mold-wrapped
+                    pkgs.nodejs
                 ];
 
                 shellHook = ''

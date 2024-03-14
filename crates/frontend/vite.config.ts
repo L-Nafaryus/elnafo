@@ -12,15 +12,15 @@ export default defineConfig({
         vue(),
         vueJsx(),
     ],
-    /*root: './src',
+    //root: './src',
     build: {
-        outDir: "dist",
         rollupOptions: {
-            input: {
-                app: './src/index.html'
+            output: {
+                entryFileNames: 'assets/[name].js',
+                assetFileNames: 'assets/[name].css'
             }
         }
-    },*/
+    },
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url))
