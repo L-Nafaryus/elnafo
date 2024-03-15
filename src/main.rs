@@ -7,11 +7,11 @@ pub mod state;
 use axum::{
     extract::State,
     http::{
-        header::{ACCEPT, AUTHORIZATION, ORIGIN},
-        HeaderValue, Method, StatusCode,
+        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, ORIGIN},
+        HeaderValue, Method, StatusCode, Uri,
     },
     middleware,
-    response::Json,
+    response::{IntoResponse, Json, Response},
     routing::{get, post},
     Router,
 };
@@ -70,6 +70,8 @@ async fn main() {
     //.allow_credentials(true); //"http://localhost:5173".parse::<HeaderValue>().unwrap());
 
     let app = Router::new()
+        .route("/", get(home))
+        .route("/assets/*file", get(static_handler))
         .route("/api/v1/register_user", post(api::v1::register_user))
         .route("/api/v1/login_user", post(api::v1::login_user))
         .layer(cors)
@@ -98,6 +100,10 @@ async fn main() {
         .unwrap();
 }
 
+async fn home() -> impl IntoResponse {
+    frontend::HomeTemplate
+}
+
 async fn users(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<User>>, (StatusCode, Json<serde_json::Value>)> {
@@ -112,6 +118,35 @@ async fn users(
         .map_err(internal_error)?;
 
     Ok(Json(result))
+}
+
+async fn static_handler(uri: Uri) -> impl IntoResponse {
+    let mut path = uri.path().trim_start_matches('/').to_string();
+
+    if path.starts_with("assets/") {
+        path = path.replace("assets/", "");
+    }
+
+    StaticFile(path)
+}
+
+pub struct StaticFile<T>(pub T);
+
+impl<T> IntoResponse for StaticFile<T>
+where
+    T: Into<String>,
+{
+    fn into_response(self) -> Response {
+        let path = self.0.into();
+
+        match frontend::Assets::get(path.as_str()) {
+            Some(content) => {
+                let mime = mime_guess::from_path(path).first_or_octet_stream();
+                ([(CONTENT_TYPE, mime.as_ref())], content.data).into_response()
+            }
+            None => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
+        }
+    }
 }
 
 /*

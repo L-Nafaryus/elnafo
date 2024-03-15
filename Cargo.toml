@@ -33,6 +33,7 @@ jsonwebtoken = "9.2.0"
 axum-extra = { version = "0.9.2", features = ["cookie"] }
 tower-http = { version = "0.5.2", features = ["trace", "cors"] }
 frontend = { version = "0.1.0", path = "crates/frontend" }
+mime_guess = "2.0.4"
 
 [workspace]
 members = ["crates/frontend"]
