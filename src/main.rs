@@ -64,10 +64,10 @@ async fn main() {
     let lister = tokio::net::TcpListener::bind(&address).await.unwrap();
 
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST])
-        .allow_headers(Any) //vec![ORIGIN, AUTHORIZATION, ACCEPT])
-        .allow_origin(Any);
-    //.allow_credentials(true); //"http://localhost:5173".parse::<HeaderValue>().unwrap());
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers(vec![ORIGIN, AUTHORIZATION, ACCEPT, CONTENT_TYPE])
+        .allow_origin("http://0.0.0.0:54600".parse::<HeaderValue>().unwrap()) //Any)
+        .allow_credentials(true); //"http://localhost:5173".parse::<HeaderValue>().unwrap());
 
     let app = Router::new()
         .route("/", get(home))

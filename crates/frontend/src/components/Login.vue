@@ -4,22 +4,22 @@ const password = defineModel("password")
 
 async function login() {
     const response = await fetch(
-        "http://localhost:54600/api/v1/login_user",
+        "http://0.0.0.0:54600/api/v1/login_user",
         {
             method: "POST",
             headers: {
                 //Accept: 'application/json',
                 "Content-Type": "application/json",
+                //"Access-Control-Allow-Origin": "http://0.0.0.0"
             },
-            credentials: "same-origin",
+            credentials: "include",
             mode: "cors",
             body: JSON.stringify({ email: email.value, password: password.value })
         }
     );
 
-    console.log(response.headers.getSetCookie());
-    const data = await response.json();
-    console.log(data);
+    let { status, token } = await response.json();
+    console.log(status);
 }
 </script>
 

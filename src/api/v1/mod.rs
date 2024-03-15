@@ -173,7 +173,8 @@ pub async fn login_user(
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
         .max_age(time::Duration::hours(1))
-        .same_site(SameSite::Lax)
+        .same_site(SameSite::None)
+        .secure(true)
         .http_only(true);
 
     let mut response =
@@ -189,7 +190,8 @@ pub async fn logout_user() -> Result<impl IntoResponse, (StatusCode, Json<serde_
     let cookie = Cookie::build(("token", ""))
         .path("/")
         .max_age(time::Duration::hours(-1))
-        .same_site(SameSite::Lax)
+        .same_site(SameSite::None)
+        .secure(true)
         .http_only(true);
 
     let mut response = Response::new(serde_json::json!({"status": "success"}).to_string());
