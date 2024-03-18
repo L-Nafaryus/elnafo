@@ -71,6 +71,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(home))
+        .route("/user/login", get(user_login))
         .route("/assets/*file", get(static_handler))
         .route("/api/v1/register_user", post(api::v1::register_user))
         .route("/api/v1/login_user", post(api::v1::login_user))
@@ -101,7 +102,11 @@ async fn main() {
 }
 
 async fn home() -> impl IntoResponse {
-    frontend::HomeTemplate
+    frontend::BaseTemplate { view: "app" }
+}
+
+async fn user_login() -> impl IntoResponse {
+    frontend::BaseTemplate { view: "signin" }
 }
 
 async fn users(

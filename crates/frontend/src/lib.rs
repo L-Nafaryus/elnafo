@@ -5,11 +5,15 @@ use rust_embed::RustEmbed;
 #[folder = "dist/assets/"]
 pub struct Assets;
 
+// TODO: parse assets and add paths to templates
+
 #[derive(Template)]
-#[template(path = "index.html")]
-pub struct HomeTemplate;
+#[template(path = "base.html")]
+pub struct BaseTemplate<'a> {
+    pub view: &'a str,
+}
 
 #[test]
 fn test_render() {
-    println!("{}", HomeTemplate.render().unwrap());
+    println!("{}", BaseTemplate { view: "home" }.render().unwrap());
 }
