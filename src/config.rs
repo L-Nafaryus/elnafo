@@ -46,7 +46,7 @@ impl Config {
                 name: env::var("DATABASE_NAME").unwrap_or("elnafo".to_string()),
             },
             server: Server {
-                address: env::var("SERVER_ADDRESS").unwrap_or("0.0.0.0".to_string()),
+                address: env::var("SERVER_ADDRESS").unwrap_or("127.0.0.1".to_string()),
                 port: env::var("SERVER_PORT")
                     .unwrap_or("54600".to_string())
                     .parse()
