@@ -1,23 +1,37 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import router from '@/router';
+
 const email = defineModel("email");
 const password = defineModel("password");
+const errorMessage = ref(null);
 
 async function login() {
-    const response = await fetch(
-        "http://0.0.0.0:54600/api/v1/login_user",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-            mode: "cors",
-            body: JSON.stringify({ email: email.value, password: password.value })
-        }
-    );
+    await fetch(import.meta.hot ? "http://localhost:54600/api/v1/login_user" : "/api/v1/login_user", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            //"Access-Control-Allow-Origin": "*"
+        },
+        credentials: "include",
+        //mode: "cors",
+        body: JSON.stringify({ email: email.value, password: password.value })
+    })
+        .then(async response => {
+            //const isJson = response.headers.get('content-type')?.includes('application/json');
+            const data = await response.json();
 
-    let { status, token } = await response.json();
-    console.log(status);
+            if (!response.ok) {
+                const error = (data && data.message) || response.status;
+                return Promise.reject(error);
+            }
+
+            router.push({ path: '/me' });
+        })
+        .catch(error => {
+            errorMessage.value = error;
+            console.error(error);
+        });
 };
 </script>
 
@@ -41,5 +55,7 @@ async function login() {
                     In</button>
             </div>
         </form>
+        <p v-if="errorMessage" class="text-center pt-3 pb-3 bg-orange-900 rounded border border-orange-700">{{
+                    errorMessage }}</p>
     </div>
 </template>
