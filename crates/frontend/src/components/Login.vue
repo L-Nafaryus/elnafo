@@ -11,10 +11,8 @@ async function login() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            //"Access-Control-Allow-Origin": "*"
         },
         credentials: "include",
-        //mode: "cors",
         body: JSON.stringify({ email: email.value, password: password.value })
     })
         .then(async response => {

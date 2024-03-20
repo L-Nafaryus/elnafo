@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [build-dependencies]
+ignore = "0.4.22"
 npm_rs = "1.0.0"
 
 [dependencies]

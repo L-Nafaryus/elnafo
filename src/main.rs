@@ -109,7 +109,7 @@ async fn home() -> impl IntoResponse {
 }
 
 async fn user_login() -> impl IntoResponse {
-    frontend::BaseTemplate { view: "signin" }
+    frontend::BaseTemplate { view: "app" }
 }
 
 async fn user(Path(user): Path<String>) -> impl IntoResponse {}
