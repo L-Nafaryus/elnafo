@@ -27,7 +27,7 @@ pub struct Server {
 pub struct Jwt {
     pub secret: String,
     pub expires_in: String,
-    pub maxage: i32,
+    pub maxage: i64,
 }
 
 impl Config {
@@ -56,7 +56,7 @@ impl Config {
                 secret: env::var("JWT_SECRET").unwrap_or("change_this_secret".to_string()),
                 expires_in: env::var("JWT_EXPIRES_IN").unwrap_or("60m".to_string()),
                 maxage: env::var("JWT_MAXAGE")
-                    .unwrap_or("60".to_string())
+                    .unwrap_or("3600".to_string())
                     .parse()
                     .unwrap(),
             },

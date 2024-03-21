@@ -1,12 +1,12 @@
-pub mod models;
+pub mod errors;
 pub mod schema;
+pub mod user;
 
 use deadpool_diesel::postgres::Manager;
 pub use deadpool_diesel::postgres::Pool;
-use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
-use crate::db::models::{NewUser, User};
+use errors::DatabaseError;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("src/db/migrations/");
 
@@ -16,45 +16,12 @@ pub fn create_pool(database_url: String) -> Pool {
     Pool::builder(manager).build().unwrap()
 }
 
-pub async fn run_migrations(pool: &Pool) {
-    let conn = pool.get().await.unwrap();
-    conn.interact(|conn| conn.run_pending_migrations(MIGRATIONS).map(|_| ()))
+pub async fn run_migrations(pool: &Pool) -> Result<(), DatabaseError<impl std::error::Error>> {
+    let connection = pool.get().await.map_err(DatabaseError::Connection)?;
+    connection
+        .interact(move |connection| connection.run_pending_migrations(MIGRATIONS).map(|_| ()))
         .await
-        .unwrap()
-        .unwrap();
-}
-
-pub fn create_user(
-    connection: &mut PgConnection,
-    login: String,
-    hashed_password: String,
-    name: String,
-    email: String,
-    is_admin: bool,
-) -> User {
-    use crate::db::schema::users;
-
-    let new_user = NewUser {
-        login,
-        hashed_password,
-        name,
-        email,
-        is_admin,
-    };
-
-    diesel::insert_into(users::table)
-        .values(&new_user)
-        .returning(User::as_returning())
-        .get_result(connection)
-        .expect("Error creating new user")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        unimplemented!();
-    }
+        .map_err(|_| DatabaseError::Interaction)?
+        .map_err(|_| DatabaseError::Migration)?;
+    Ok(())
 }

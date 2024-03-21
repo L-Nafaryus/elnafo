@@ -5,28 +5,18 @@ pub mod error_handle;
 pub mod state;
 
 use axum::{
-    extract::{Path, State},
-    http::{
-        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, COOKIE, ORIGIN},
-        HeaderValue, Method, StatusCode, Uri,
-    },
-    middleware,
-    response::{IntoResponse, Json, Response},
-    routing::{get, post},
+    extract::Path,
+    http::{header::CONTENT_TYPE, StatusCode, Uri},
+    response::{IntoResponse, Response},
+    routing::get,
     Router,
 };
-use diesel::RunQueryDsl;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::{env, net::Ipv4Addr};
-use tower_http::{
-    cors::{Any, CorsLayer},
-    trace::{self, TraceLayer},
-};
+use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 
 use crate::config::Config;
-use crate::db::{create_user, models::User};
 use crate::error_handle::*;
 use crate::state::AppState;
 
@@ -63,38 +53,16 @@ async fn main() {
 
     let lister = tokio::net::TcpListener::bind(&address).await.unwrap();
 
-    let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
-        .allow_headers(vec![ORIGIN, AUTHORIZATION, ACCEPT, CONTENT_TYPE, COOKIE])
-        .allow_origin([
-            "http://localhost:54600".parse().unwrap(),
-            "http://localhost:5173".parse().unwrap(),
-        ]) //Any)
-        .allow_credentials(true); //"http://localhost:5173".parse::<HeaderValue>().unwrap());
-
     let app = Router::new()
         .route("/", get(home))
         .route("/user/login", get(user_login))
         .route("/assets/*file", get(static_handler))
-        .route("/api/v1/register_user", post(api::v1::register_user))
-        .route("/api/v1/login_user", post(api::v1::login_user))
-        .route(
-            "/api/v1/me",
-            get(api::v1::me).route_layer(middleware::from_fn_with_state(
-                state.clone(),
-                api::v1::jwt_auth,
-            )),
-        )
-        .layer(cors)
-        .route("/api/v1/healthcheck", get(api::v1::healthcheck))
-        .route("/api/v1/users", get(users))
-        .route("/api/v1/logout_user", get(api::v1::logout_user))
+        .nest("/api", api::v1::routes(state))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
                 .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
-        )
-        .with_state(state);
+        );
 
     println!("listening on http://{}", address);
 
@@ -113,22 +81,6 @@ async fn user_login() -> impl IntoResponse {
 }
 
 async fn user(Path(user): Path<String>) -> impl IntoResponse {}
-
-async fn users(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Vec<User>>, (StatusCode, Json<serde_json::Value>)> {
-    use db::schema::users::dsl::*;
-
-    let conn = state.database.get().await.unwrap();
-
-    let result = conn
-        .interact(move |conn| users.load(conn))
-        .await
-        .map_err(internal_error)?
-        .map_err(internal_error)?;
-
-    Ok(Json(result))
-}
 
 async fn static_handler(uri: Uri) -> impl IntoResponse {
     let mut path = uri.path().trim_start_matches('/').to_string();
@@ -158,21 +110,3 @@ where
         }
     }
 }
-
-/*
-    create_user(
-        connection,
-        "L-Nafaryus",
-        "asdasd",
-        "L-Nafaryus",
-        "l.nafaryus@elnafo.ru",
-        true,
-    );
-
-    let results = users
-        .select(User::as_select())
-        .load(connection)
-        .expect("Error loading users");
-
-    println!("Found {} users", results.len());
-*/
