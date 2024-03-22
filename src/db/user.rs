@@ -90,15 +90,15 @@ impl User {
 
     pub fn by_email(email: String) -> BoxedQuery<'static> {
         users::table
-            .select(User::as_select())
             .into_boxed()
+            .select(User::as_select())
             .filter(users::email.eq(email))
     }
 
     pub fn by_id(id: uuid::Uuid) -> BoxedQuery<'static> {
         users::table
-            .select(User::as_select())
             .into_boxed()
+            .select(User::as_select())
             .filter(users::id.eq(id))
     }
 
@@ -116,6 +116,19 @@ impl User {
         Ok(user)
     }
 
-    #[allow(unused_variables)]
-    pub fn remove(pool: Pool, email: String) {}
+    pub async fn remove(
+        pool: &Pool,
+        user: User,
+    ) -> Result<(), DatabaseError<impl std::error::Error>> {
+        let connection = pool.get().await.map_err(DatabaseError::Connection)?;
+        connection
+            .interact(move |connection| {
+                diesel::delete(users::table.filter(users::id.eq(user.id))).execute(connection)
+            })
+            .await
+            .map_err(|_| DatabaseError::Interaction)?
+            .map_err(|_| DatabaseError::Interaction)?;
+
+        Ok(())
+    }
 }

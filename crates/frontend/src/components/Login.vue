@@ -7,7 +7,7 @@ const password = defineModel("password");
 const errorMessage = ref(null);
 
 async function login() {
-    await fetch(import.meta.hot ? "http://localhost:54600/api/v1/login_user" : "/api/v1/login_user", {
+    await fetch(import.meta.hot ? "http://localhost:54600/api/v1/user/login" : "/api/v1/user/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

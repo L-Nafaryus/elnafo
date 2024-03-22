@@ -31,6 +31,7 @@ pub fn routes(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/v1/healthcheck", get(healthcheck))
         .route("/v1/user/register", post(user::register))
+        .route("/v1/user/remove", post(user::remove))
         .route("/v1/user/login", post(user::login))
         .route("/v1/user/logout", get(user::logout))
         .route("/v1/user/profile", get(user::profile).route_layer(jwt))

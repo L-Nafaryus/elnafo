@@ -4,6 +4,7 @@ use serde_json::json;
 #[derive(Debug)]
 pub enum AuthError<E> {
     InternalError(E),
+    InternalE,
     MissingCredentials,
     InvalidCredentials,
     MissingToken,
@@ -15,6 +16,7 @@ impl<E: std::error::Error> IntoResponse for AuthError<E> {
     fn into_response(self) -> axum::response::Response {
         let (status, message) = match self {
             Self::InternalError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            Self::InternalE => (StatusCode::INTERNAL_SERVER_ERROR, "Internal E".to_string()),
             Self::MissingCredentials => {
                 (StatusCode::BAD_REQUEST, "Missing credentials".to_string())
             }

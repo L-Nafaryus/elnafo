@@ -34,6 +34,11 @@ pub struct FilteredUser {
     pub is_admin: bool,
 }
 
+#[derive(serde::Deserialize)]
+pub struct RemoveUser {
+    pub id: String,
+}
+
 impl FilteredUser {
     pub fn from(user: &User) -> Self {
         FilteredUser {
@@ -67,9 +72,32 @@ pub async fn register(
     .map_err(AuthError::InternalError)?;
 
     Ok(Json(json!({
-        "status": "success",
+        "status": StatusCode::OK.to_string(),
         "user": FilteredUser::from(&user)
     })))
+}
+
+pub async fn remove(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<RemoveUser>,
+) -> Result<impl IntoResponse, AuthError<impl std::error::Error>> {
+    let user = User::find(
+        &state.database,
+        User::by_id(uuid::Uuid::parse_str(&body.id).map_err(|_| AuthError::InvalidCredentials)?),
+    )
+    .await
+    .map_err(AuthError::InternalError)?;
+
+    let user = match user {
+        Some(user) => user,
+        None => return Err(AuthError::MissingUser),
+    };
+
+    User::remove(&state.database, user)
+        .await
+        .map_err(|_| AuthError::InternalE)?;
+
+    Ok(Json(json!({"status": StatusCode::OK.to_string()})))
 }
 
 pub async fn login(

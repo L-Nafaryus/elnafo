@@ -9,13 +9,12 @@ const is_admin = ref(null);
 const errorMessage = ref(null);
 
 onMounted(async () => {
-    const asd = await fetch(import.meta.hot ? "http://localhost:54600/api/v1/me" : "/api/v1/me", {
+    const asd = await fetch(import.meta.hot ? "http://localhost:54600/api/v1/user/profile" : "/api/v1/user/profile", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
         },
         credentials: "include",
-        mode: "cors",
     })
         .then(async response => {
             const isJson = response.headers.get('content-type')?.includes('application/json');
@@ -26,9 +25,9 @@ onMounted(async () => {
                 return Promise.reject(error);
             }
 
-            name.value = data.data.user.name;
-            email.value = data.data.user.email;
-            is_admin.value = data.data.user.is_admin;
+            name.value = data.user.name;
+            email.value = data.user.email;
+            is_admin.value = data.user.is_admin;
         })
         .catch(error => {
             errorMessage.value = error;
