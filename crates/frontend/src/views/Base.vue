@@ -1,10 +1,25 @@
 <script setup lang="ts">
 import Meerkat from '@/components/icons/Meerkat.vue';
 import NavBar from '@/components/NavBar.vue';
+import User from "@/services/user";
+import { ref, onMounted } from 'vue';
 
-function next() {
-    window.location.pathname = "/me";
-};
+const user = ref(null);
+
+onMounted(async () => {
+    await User.current()
+        .then(async response => {
+            if (response.status != 200) {
+                return Promise.reject(response.data && response.data.message || response.status);
+            };
+            if (response.data.hasOwnProperty("user")) {
+                user.value = response.data.user;
+            };
+        })
+        .catch(e => {
+            console.error("Error occured:", e);
+        });
+});
 </script>
 
 <template>
@@ -14,10 +29,11 @@ function next() {
                 <Meerkat />
             </template>
             <template #right>
-                <RouterLink class="flex min-w-9 min-h-9 pt-1 pb-1 pl-3 pr-3 rounded hover:bg-zinc-600" to="/user/login">
+                <RouterLink v-if="user" class="flex min-w-9 min-h-9 pt-1 pb-1 pl-3 pr-3 rounded hover:bg-zinc-600"
+                    :to="{ name: 'User', params: { user: user.login } }">{{ user.name }}</RouterLink>
+                <RouterLink v-if="!user" class="flex min-w-9 min-h-9 pt-1 pb-1 pl-3 pr-3 rounded hover:bg-zinc-600"
+                    to="/user/login">
                     Sign In</RouterLink>
-                <a class="flex min-w-9 min-h-9 pt-1 pb-1 pl-3 pr-3 rounded hover:bg-zinc-600" href="/user/register">Sign
-                    up</a>
             </template>
         </NavBar>
 

@@ -1,30 +1,21 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import router from '@/router';
+import { ref } from "vue";
+import router from "@/router";
+import User from "@/services/user";
 
 const email = defineModel("email");
 const password = defineModel("password");
 const errorMessage = ref(null);
 
 async function login() {
-    await fetch(import.meta.hot ? "http://localhost:54600/api/v1/user/login" : "/api/v1/user/login", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email: email.value, password: password.value })
-    })
+    await User.login(email.value, password.value)
         .then(async response => {
-            //const isJson = response.headers.get('content-type')?.includes('application/json');
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = (data && data.message) || response.status;
-                return Promise.reject(error);
+            if (response.status != 200) {
+                return Promise.reject(response.data && response.data.message || response.status);
             }
 
-            router.push({ path: '/me' });
+            const login = response.data.user.login;
+            router.push({ path: `/${login}` });
         })
         .catch(error => {
             errorMessage.value = error;
