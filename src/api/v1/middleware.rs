@@ -3,9 +3,10 @@ use std::sync::Arc;
 use axum::{
     body::Body,
     extract::{Request, State},
-    http::header,
+    http::{header, StatusCode},
     middleware::Next,
     response::IntoResponse,
+    Json,
 };
 use axum_extra::extract::CookieJar;
 
@@ -14,7 +15,7 @@ use crate::{db::user::User, state::AppState};
 use super::errors::AuthError;
 use super::token::TokenClaims;
 
-pub async fn jwt_auth(
+pub async fn jwt(
     cookie_jar: CookieJar,
     State(state): State<Arc<AppState>>,
     mut req: Request<Body>,
@@ -27,13 +28,8 @@ pub async fn jwt_auth(
             req.headers()
                 .get(header::AUTHORIZATION)
                 .and_then(|auth_header| auth_header.to_str().ok())
-                .and_then(|auth_value| {
-                    if auth_value.starts_with("Bearer ") {
-                        Some(auth_value[7..].to_owned())
-                    } else {
-                        None
-                    }
-                })
+                .and_then(|auth_value| auth_value.strip_prefix("Bearer "))
+                .map(|auth_token| auth_token.to_owned())
         });
 
     let token = token.ok_or_else(|| AuthError::MissingToken)?;
@@ -49,5 +45,30 @@ pub async fn jwt_auth(
     let user = user.ok_or_else(|| AuthError::MissingUser)?;
 
     req.extensions_mut().insert(user);
+    Ok(next.run(req).await)
+}
+
+pub async fn jwt_auth(
+    cookie_jar: CookieJar,
+    State(state): State<Arc<AppState>>,
+    mut req: Request<Body>,
+    next: Next,
+) -> Result<impl IntoResponse, StatusCode> {
+    let token = cookie_jar
+        .get("token")
+        .map(|cookie| cookie.value().to_string())
+        .or_else(|| {
+            req.headers()
+                .get(header::AUTHORIZATION)
+                .and_then(|auth_header| auth_header.to_str().ok())
+                .and_then(|auth_value| auth_value.strip_prefix("Bearer "))
+                .map(|auth_token| auth_token.to_owned())
+        });
+
+    let user_id = token
+        .and_then(|token| TokenClaims::validate(token, state.config.jwt.secret.to_owned()).ok())
+        .and_then(|claims| uuid::Uuid::parse_str(&claims.sub).ok());
+
+    req.extensions_mut().insert(user_id);
     Ok(next.run(req).await)
 }

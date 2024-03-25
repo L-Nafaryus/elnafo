@@ -102,6 +102,13 @@ impl User {
             .filter(users::id.eq(id))
     }
 
+    pub fn by_login(login: String) -> BoxedQuery<'static> {
+        users::table
+            .into_boxed()
+            .select(User::as_select())
+            .filter(users::login.eq(login))
+    }
+
     pub async fn find(
         pool: &Pool,
         query: BoxedQuery<'static>,

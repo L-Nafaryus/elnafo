@@ -1,5 +1,6 @@
 use argon2::Argon2;
 use argon2::{PasswordHash, PasswordVerifier};
+use axum::extract::Path;
 use axum::Extension;
 use axum::{
     extract::State,
@@ -29,6 +30,7 @@ pub struct RegisterUser {
 #[derive(serde::Serialize)]
 pub struct FilteredUser {
     pub id: String,
+    pub login: String,
     pub name: String,
     pub email: String,
     pub is_admin: bool,
@@ -43,6 +45,7 @@ impl FilteredUser {
     pub fn from(user: &User) -> Self {
         FilteredUser {
             id: user.id.to_string(),
+            login: user.login.to_string(),
             name: user.name.to_owned(),
             email: user.email.to_owned(),
             is_admin: user.is_admin,
@@ -137,7 +140,7 @@ pub async fn login(
         .http_only(true);
 
     let mut response =
-        Json(json!({"status": StatusCode::OK.to_string(), "token": token})).into_response();
+        Json(json!({"status": StatusCode::OK.to_string(), "token": token, "user": json!(FilteredUser::from(&user))})).into_response();
     response
         .headers_mut()
         .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
@@ -162,9 +165,48 @@ pub async fn logout() -> Result<impl IntoResponse, (StatusCode, Json<serde_json:
 }
 
 pub async fn profile(
-    Extension(user): Extension<User>,
+    State(state): State<Arc<AppState>>,
+    Extension(user_id): Extension<Option<uuid::Uuid>>,
+    Path(login): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let user = User::find(&state.database, User::by_login(login))
+        .await
+        .map_err(|_| ())
+        .unwrap();
+
+    let response = if let Some(user) = user {
+        json!({"status": StatusCode::OK.to_string(), "user": json!(FilteredUser::from(&user))})
+    } else {
+        json!({"status": StatusCode::NOT_FOUND.to_string()})
+    };
+
+    Ok(Json(response))
+}
+
+pub async fn current(
+    State(state): State<Arc<AppState>>,
+    Extension(user_id): Extension<Option<uuid::Uuid>>,
+) -> Result<impl IntoResponse, AuthError<impl std::error::Error>> {
+    let user = get_user(state, user_id).await?;
+
     Ok(Json(
-        json!({"status":"success","user":json!(FilteredUser::from(&user))}),
+        json!({"status": StatusCode::OK.to_string(), "user": json!(FilteredUser::from(&user))}),
     ))
+}
+
+async fn get_user(
+    state: Arc<AppState>,
+    user_id: Option<uuid::Uuid>,
+) -> Result<User, AuthError<impl std::error::Error>> {
+    let user = if let Some(user_id) = user_id {
+        User::find(&state.database, User::by_id(user_id))
+            .await
+            .map_err(AuthError::InternalError)
+    } else {
+        Err(AuthError::InvalidCredentials)
+    };
+
+    let user = user?.ok_or_else(|| AuthError::MissingUser)?;
+
+    Ok(user)
 }
