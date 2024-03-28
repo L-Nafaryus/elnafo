@@ -1,33 +1,44 @@
 <script setup lang="ts">
+import Base from "@/views/Base.vue";
+import Error from "@/components/error/Error.vue";
+
 import { ref } from "vue";
+
 import router from "@/router";
 import User from "@/services/user";
 
+const login = defineModel("login");
 const email = defineModel("email");
 const password = defineModel("password");
-const errorMessage = ref(null);
 
-async function login() {
-    await User.login(email.value, password.value)
+const error = ref(null);
+
+async function register() {
+    await User.register(login.value, email.value, password.value)
         .then(async response => {
             if (response.status != 200) {
                 return Promise.reject(response.data && response.data.message || response.status);
             }
 
-            const login = response.data.user.login;
-            router.push({ path: `/${login}` });
+            router.push({ path: "/user/login" });
         })
-        .catch(error => {
-            errorMessage.value = error;
-            console.error(error);
+        .catch(e => {
+            error.value = e;
+            console.log(`${e.name}[${e.code}]: ${e.message}`);
         });
 };
 </script>
 
 <template>
+    <Base>
     <div class="ml-auto mr-auto w-1/2 pt-5 pb-5">
-        <h4 class="text-center pt-5 pb-5 border-b border-zinc-500">Sign In</h4>
+        <h4 class="text-center pt-5 pb-5 border-b border-zinc-500">Sign Up</h4>
         <form @submit.prevent class="m-auto pt-5 pb-5">
+            <div class="mb-5 ml-auto mr-auto">
+                <label for="login" class="text-right w-64 inline-block mr-5">Login</label>
+                <input v-model="login" type="" placeholder="" name="login" required
+                    class="w-1/2 bg-zinc-800 pl-3 pr-3 pt-2 pb-2 outline-none rounded border border-zinc-500 hover:border-zinc-400 focus:border-green-800">
+            </div>
             <div class="mb-5 ml-auto mr-auto">
                 <label for="email" class="text-right w-64 inline-block mr-5">Email Address</label>
                 <input v-model="email" type="email" placeholder="" name="email" required
@@ -40,11 +51,11 @@ async function login() {
             </div>
             <div class="mb-5 ml-auto mr-auto">
                 <label class="text-right w-64 inline-block mr-5"></label>
-                <button @click="login" class="rounded bg-zinc-500 hover:bg-zinc-400 pb-2 pt-2 pl-5 pr-5">Sign
-                    In</button>
+                <button @click="register" class="rounded bg-zinc-500 hover:bg-zinc-400 pb-2 pt-2 pl-5 pr-5">Sign
+                    Up</button>
             </div>
         </form>
-        <p v-if="errorMessage" class="text-center pt-3 pb-3 bg-orange-900 rounded border border-orange-700">{{
-                    errorMessage }}</p>
+        <Error v-if="error">{{ error }}</Error>
     </div>
+    </Base>
 </template>

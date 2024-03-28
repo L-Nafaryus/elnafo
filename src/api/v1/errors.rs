@@ -15,7 +15,7 @@ pub enum AuthError<E> {
 impl<E: std::error::Error> IntoResponse for AuthError<E> {
     fn into_response(self) -> axum::response::Response {
         let (status, message) = match self {
-            Self::InternalError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            Self::InternalError(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal Error: {}", e.to_string())),
             Self::InternalE => (StatusCode::INTERNAL_SERVER_ERROR, "Internal E".to_string()),
             Self::MissingCredentials => {
                 (StatusCode::BAD_REQUEST, "Missing credentials".to_string())
@@ -28,11 +28,14 @@ impl<E: std::error::Error> IntoResponse for AuthError<E> {
             Self::MissingUser => (StatusCode::UNAUTHORIZED, "User not exists".to_string()),
         };
 
-        Json(json!({
-            "status": status.to_string(),
-            "message": message
-        }))
-        .into_response()
+        (
+            status,
+            Json(json!({
+                "status": status.to_string(),
+                "message": message
+            })),
+        )
+            .into_response()
     }
 }
 

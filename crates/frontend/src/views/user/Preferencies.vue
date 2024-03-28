@@ -1,0 +1,38 @@
+<script setup lang="ts">
+import Base from "@/views/Base.vue";
+
+import { ref, onMounted, watch, getCurrentInstance } from "vue";
+
+import { usePreferenciesStore } from "@/stores/preferencies.ts";
+
+const preferenciesStore = usePreferenciesStore();
+
+</script>
+
+<template>
+    <Base>
+    <div class="flex gap-4 mt-4 ml-auto mr-auto content ">
+        <Router-View />
+        <div>
+            <div class="border rounded border-zinc-500 flex-col w-64">
+                <h1 class="pl-5 pr-5 pt-2 pb-2">User Preferencies</h1>
+                <RouterLink :to="{ name: 'Preferencies-Profile' }"
+                    :class="{ 'bg-zinc-600': preferenciesStore.current_tab === 0 }"
+                    class="flex min-w-7 pl-5 pr-5 pt-2 pb-2 hover:bg-zinc-600 border-t border-zinc-500">
+                    Profile</RouterLink>
+                <RouterLink :to="{ name: 'Preferencies-Account' }"
+                    :class="{ 'bg-zinc-600': preferenciesStore.current_tab === 1 }"
+                    class="flex min-w-7 pl-5 pr-5 pt-2 pb-2 hover:bg-zinc-600 border-t border-zinc-500">
+                    Account</RouterLink>
+            </div>
+        </div>
+    </div>
+    </Base>
+</template>
+
+<style>
+.content {
+    width: 1280px;
+    max-width: calc(100% - 64px);
+}
+</style>

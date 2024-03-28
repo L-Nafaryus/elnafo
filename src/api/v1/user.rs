@@ -22,9 +22,7 @@ use super::token::TokenClaims;
 pub struct RegisterUser {
     pub login: String,
     pub password: String,
-    pub name: String,
     pub email: String,
-    pub is_admin: bool,
 }
 
 #[derive(serde::Serialize)]
@@ -65,11 +63,11 @@ pub async fn register(
 ) -> Result<impl IntoResponse, AuthError<impl std::error::Error>> {
     let user = User::register(
         &state.database,
-        body.login,
+        body.login.to_owned(),
         body.password,
-        body.name,
+        body.login, //body.name,
         body.email,
-        body.is_admin,
+        false, //body.is_admin,
     )
     .await
     .map_err(AuthError::InternalError)?;
