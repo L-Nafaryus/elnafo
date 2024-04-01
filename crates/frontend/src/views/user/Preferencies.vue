@@ -14,7 +14,7 @@ const preferenciesStore = usePreferenciesStore();
     <div class="flex gap-4 mt-4 ml-auto mr-auto content ">
         <Router-View />
         <div>
-            <div class="border rounded border-zinc-500 flex-col w-64">
+            <div class="border rounded border-zinc-500 flex-col w-64 side-nav">
                 <h1 class="pl-5 pr-5 pt-2 pb-2">User Preferencies</h1>
                 <RouterLink :to="{ name: 'Preferencies-Profile' }"
                     :class="{ 'bg-zinc-600': preferenciesStore.current_tab === 0 }"
@@ -34,5 +34,9 @@ const preferenciesStore = usePreferenciesStore();
 .content {
     width: 1280px;
     max-width: calc(100% - 64px);
+}
+
+.side-nav {
+    transform: perspective(300px) rotateY(-8deg) scaleY(1.05);
 }
 </style>

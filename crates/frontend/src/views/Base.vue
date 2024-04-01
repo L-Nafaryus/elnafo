@@ -87,11 +87,15 @@ async function user_logout() {
             </template>
         </NavBar>
 
-        <main>
+        <main class="overflow-hidden">
+            <div>
+                <div class="bg-grid"></div>
+            </div>
             <slot></slot>
         </main>
     </div>
-    <footer class="flex justify-between pb-2 pt-2 pl-5 pr-5 bg-zinc-800 border-t border-t-zinc-500">
+    <footer
+        class="flex justify-between pb-2 pt-2 pl-5 pr-5 bg-gradient-to-b from-zinc-800 to-zinc-900 border-t border-t-zinc-500">
         <a href="/">Made with glove</a>
         <a href="/api/v1">API</a>
     </footer>
