@@ -10,17 +10,22 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 
-use crate::{db::user::User, state::AppState};
+use crate::{
+    db::{self, schema::users, user::User},
+    state::AppState,
+};
 
 use super::errors::AuthError;
-use super::token::TokenClaims;
+use super::{errors::ApiError, token::TokenClaims};
 
 pub async fn jwt(
     cookie_jar: CookieJar,
     State(state): State<Arc<AppState>>,
     mut req: Request<Body>,
     next: Next,
-) -> Result<impl IntoResponse, AuthError<impl std::error::Error>> {
+) -> Result<impl IntoResponse, ApiError> {
+    use diesel::prelude::*;
+
     let token = cookie_jar
         .get("token")
         .map(|cookie| cookie.value().to_string())
@@ -32,17 +37,22 @@ pub async fn jwt(
                 .map(|auth_token| auth_token.to_owned())
         });
 
-    let token = token.ok_or_else(|| AuthError::MissingToken)?;
+    let token = token.ok_or(AuthError::MissingToken)?;
     let claims = TokenClaims::validate(token, state.config.jwt.secret.to_owned())
         .map_err(|_| AuthError::InvalidToken)?;
 
     let user_id = uuid::Uuid::parse_str(&claims.sub).map_err(|_| AuthError::InvalidToken)?;
 
-    let user = User::find(&state.database, User::by_id(user_id))
-        .await
-        .map_err(AuthError::InternalError)?;
+    let user = db::execute(&state.database, move |conn| {
+        users::table
+            .into_boxed()
+            .filter(users::id.eq(user_id))
+            .first::<User>(conn)
+            .optional()
+    })
+    .await?;
 
-    let user = user.ok_or_else(|| AuthError::MissingUser)?;
+    let user = user.ok_or(AuthError::MissingUser)?;
 
     req.extensions_mut().insert(user);
     Ok(next.run(req).await)

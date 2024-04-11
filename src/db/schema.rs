@@ -8,5 +8,6 @@ diesel::table! {
         name -> Text,
         email -> Text,
         is_admin -> Bool,
+        avatar -> Text,
     }
 }

@@ -1,63 +1,48 @@
 use deadpool_diesel::postgres::PoolError;
+use deadpool_sync::InteractError;
+use diesel::result::Error as DieselError;
+use std::error::Error as StdError;
+use std::fmt::Display;
 
-#[derive(Debug)]
-pub enum DatabaseError<E> {
-    Connection(E),
-    Interaction,
-    Operation(E),
+#[derive(Debug, utoipa::ToSchema)]
+pub enum DatabaseError {
+    Connection,
+    Interaction(InteractError),
+    Operation(DieselError),
+    Query(DieselError),
     Migration,
+    Internal,
 }
 
-impl<E: std::fmt::Display> std::fmt::Display for DatabaseError<E> {
+impl StdError for DatabaseError {}
+
+impl Display for DatabaseError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::Connection(e) => write!(f, "Failed to connect to database: {}", e),
-            Self::Interaction => write!(f, "Failed to interact with database"),
-            Self::Operation(e) => write!(f, "Failed operation: {}", e),
+            Self::Connection => write!(f, "Failed pool connection"),
+            Self::Interaction(ref e) => e.fmt(f),
+            Self::Operation(ref e) => e.fmt(f),
+            Self::Query(ref e) => e.fmt(f),
             Self::Migration => write!(f, "Failed to run migrations"),
+            Self::Internal => write!(f, "Internal error ..."),
         }
     }
 }
 
-impl<E: std::error::Error + 'static> std::error::Error for DatabaseError<E> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Interaction | Self::Migration => None,
-            Self::Connection(e) => Some(e),
-            Self::Operation(e) => Some(e),
-        }
+impl From<PoolError> for DatabaseError {
+    fn from(_: PoolError) -> Self {
+        Self::Connection
     }
 }
 
-impl From<PoolError> for DatabaseError<PoolError> {
-    fn from(e: PoolError) -> Self {
-        Self::Connection(e)
+impl From<InteractError> for DatabaseError {
+    fn from(e: InteractError) -> Self {
+        Self::Interaction(e)
     }
 }
 
-#[derive(Debug)]
-pub enum UserError {
-    Query,
-    Exists,
-    NotFound,
-    HashPassword,
-}
-
-impl std::fmt::Display for UserError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Self::Query => write!(f, "User query failed"),
-            UserError::Exists => write!(f, "User already exists"),
-            UserError::NotFound => write!(f, "User not found"),
-            UserError::HashPassword => write!(f, "Failed to hash user password"),
-        }
-    }
-}
-
-impl std::error::Error for UserError {}
-
-impl From<UserError> for DatabaseError<UserError> {
-    fn from(e: UserError) -> Self {
-        Self::Operation(e)
+impl From<DieselError> for DatabaseError {
+    fn from(e: DieselError) -> Self {
+        Self::Query(e)
     }
 }
