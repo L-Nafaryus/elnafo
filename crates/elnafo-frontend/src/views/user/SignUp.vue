@@ -5,7 +5,7 @@ import Error from "@/components/error/Error.vue";
 import { ref } from "vue";
 
 import router from "@/router";
-import User from "@/services/user";
+import { user } from "@/api";
 
 const login = defineModel("login");
 const email = defineModel("email");
@@ -13,19 +13,10 @@ const password = defineModel("password");
 
 const error = ref(null);
 
-async function register() {
-    await User.register(login.value, email.value, password.value)
-        .then(async response => {
-            if (response.status != 200) {
-                return Promise.reject(response.data && response.data.message || response.status);
-            }
-
-            router.push({ path: "/user/login" });
-        })
-        .catch(e => {
-            error.value = e;
-            console.log(`${e.name}[${e.code}]: ${e.message}`);
-        });
+async function signup() {
+    await user.register({ login: login.value, password: password.value, email: email.value })
+        .then(async user => { router.push({ path: "/user/login" }); })
+        .catch(error => { error.value = error; });
 };
 </script>
 
@@ -51,11 +42,11 @@ async function register() {
             </div>
             <div class="mb-5 ml-auto mr-auto">
                 <label class="text-right w-64 inline-block mr-5"></label>
-                <button @click="register" class="rounded bg-zinc-500 hover:bg-zinc-400 pb-2 pt-2 pl-5 pr-5">Sign
+                <button @click="signup" class="rounded bg-zinc-500 hover:bg-zinc-400 pb-2 pt-2 pl-5 pr-5">Sign
                     Up</button>
             </div>
         </form>
-        <Error v-if="error">{{ error }}</Error>
+        <Error v-if="error">{{ error.message }}</Error>
     </div>
     </Base>
 </template>

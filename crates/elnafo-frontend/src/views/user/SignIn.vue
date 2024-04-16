@@ -2,43 +2,54 @@
 import Base from "@/views/Base.vue";
 import Error from "@/components/error/Error.vue";
 
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 import router from "@/router";
-import User from "@/services/user";
-import { useUserStore } from "@/stores/user";
+import { user } from "@/api";
+import { useUserStore } from "@/stores";
 
-const email = defineModel("email");
+const email_or_login = defineModel("email_or_login");
 const password = defineModel("password");
 
-const error = ref(null);
 const userStore = useUserStore();
+const error = ref(null);
 
-async function login() {
-    await User.login(email.value, password.value)
-        .then(async response => {
-            if (response.status != 200) {
-                return Promise.reject(response.data && response.data.message || response.status);
-            }
+onMounted(async () => {
+    if (userStore.current) {
+        router.replace({ path: "/" });
+    }
+});
 
-            userStore.login = response.data.user.login;
-            router.push({ path: `/${userStore.login}` });
+async function signin() {
+    const body: user.LoginUser = {
+        email: null,
+        login: null,
+        password: password.value
+    };
+
+    if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email_or_login.value)) {
+        body.email = email_or_login.value;
+    } else {
+        body.login = email_or_login.value;
+    }
+
+    await user.login(body)
+        .then(async user => {
+            userStore.current = user;
+            router.push({ path: "/" });
         })
-        .catch(e => {
-            error.value = e;
-            console.log(`${e.name}[${e.code}]: ${e.message}`);
-        });
+        .catch(error => { error.value = error; });
 };
 </script>
 
 <template>
     <Base>
     <div class="ml-auto mr-auto w-1/2 pt-5 pb-5">
-        <h4 class="text-center pt-5 pb-5 border-b border-zinc-500">Sign In</h4>
+        <h1 class="text-center pt-5 pb-5 border-b border-zinc-500">Sign In</h1>
         <form @submit.prevent class="m-auto pt-5 pb-5">
             <div class="mb-5 ml-auto mr-auto">
-                <label for="email" class="text-right w-64 inline-block mr-5">Email Address</label>
-                <input v-model="email" type="email" placeholder="" name="email" required
+                <label for="email_or_login" class="text-right w-64 inline-block mr-5">Email or Login</label>
+                <input v-model="email_or_login" placeholder="" name="email_or_login" required
                     class="w-1/2 bg-zinc-800 pl-3 pr-3 pt-2 pb-2 outline-none rounded border border-zinc-500 hover:border-zinc-400 focus:border-green-800">
             </div>
             <div class="mb-5 ml-auto mr-auto">
@@ -49,7 +60,7 @@ async function login() {
             <div class="mb-5 ml-auto mr-auto">
                 <label class="text-right w-64 inline-block mr-5"></label>
                 <div class="flex justify-between items-center w-1/2 m-auto">
-                    <button @click="login" class="rounded bg-zinc-500 hover:bg-zinc-400 pb-2 pt-2 pl-5 pr-5">Sign
+                    <button @click="signin" class="rounded bg-zinc-500 hover:bg-zinc-400 pb-2 pt-2 pl-5 pr-5">Sign
                         In</button>
                     <p>or</p>
                     <button @click="$router.push('/user/register')"

@@ -1,7 +1,8 @@
 [package]
-name = "frontend"
+name = "elnafo-frontend"
 version = "0.1.0"
 edition = "2021"
+authors = ["L-Nafaryus <l.nafaryus@elnafo.ru>"]
 
 [build-dependencies]
 ignore = "0.4.22"

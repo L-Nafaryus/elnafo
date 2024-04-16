@@ -3,9 +3,9 @@ import Base from "@/views/Base.vue";
 
 import { ref, onMounted, watch, getCurrentInstance } from "vue";
 
-import { usePreferenciesStore } from "@/stores/preferencies.ts";
+import { useMiscStore } from "@/stores";
 
-const preferenciesStore = usePreferenciesStore();
+const miscStore = useMiscStore();
 
 </script>
 
@@ -16,12 +16,10 @@ const preferenciesStore = usePreferenciesStore();
         <div>
             <div class="border rounded border-zinc-500 flex-col w-64 side-nav">
                 <h1 class="pl-5 pr-5 pt-2 pb-2">User Preferencies</h1>
-                <RouterLink :to="{ name: 'Preferencies-Profile' }"
-                    :class="{ 'bg-zinc-600': preferenciesStore.current_tab === 0 }"
+                <RouterLink :to="{ name: 'prefs-profile' }" :class="{ 'bg-zinc-600': miscStore.p_current_tab === 0 }"
                     class="flex min-w-7 pl-5 pr-5 pt-2 pb-2 hover:bg-zinc-600 border-t border-zinc-500">
                     Profile</RouterLink>
-                <RouterLink :to="{ name: 'Preferencies-Account' }"
-                    :class="{ 'bg-zinc-600': preferenciesStore.current_tab === 1 }"
+                <RouterLink :to="{ name: 'prefs-account' }" :class="{ 'bg-zinc-600': miscStore.p_current_tab === 1 }"
                     class="flex min-w-7 pl-5 pr-5 pt-2 pb-2 hover:bg-zinc-600 border-t border-zinc-500">
                     Account</RouterLink>
             </div>

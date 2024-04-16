@@ -2,10 +2,8 @@ use askama_axum::Template;
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
-#[folder = "dist/assets/"]
+#[folder = "dist/resources/assets/"]
 pub struct Assets;
-
-// TODO: parse assets and add paths to templates
 
 #[derive(Template)]
 #[template(path = "base.html")]

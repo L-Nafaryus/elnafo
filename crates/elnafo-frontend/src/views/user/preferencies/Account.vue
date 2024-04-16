@@ -4,9 +4,7 @@ import Base from "@/views/Base.vue";
 import { ref, onMounted, watch, getCurrentInstance } from "vue";
 
 import router from "@/router";
-import User from "@/services/user";
-import { useUserStore } from "@/stores/user";
-import { usePreferenciesStore } from "@/stores/preferencies.ts";
+import { useUserStore, useMiscStore } from "@/stores";
 
 const password = defineModel("password");
 const new_password = defineModel("new-password");
@@ -19,31 +17,17 @@ const confirm_password = defineModel("confirm-password");
 
 const error = ref(null);
 const userStore = useUserStore();
-const preferenciesStore = usePreferenciesStore();
+const miscStore = useMiscStore();
 
 onMounted(async () => {
-    preferenciesStore.current_tab = 1;
+    miscStore.p_current_tab = 1;
 
-    !userStore.login ? router.push({ name: "SignIn" }) : await User.current()
-        .then(async response => {
-            error.value = null;
-
-            if (response.status != 200) {
-                return Promise.reject(response.data && response.data.message || response.status);
-            };
-
-            email.value = response.data.user.email;
-        })
-        .catch(e => {
-            error.value = e;
-            console.log(`${e.name}[${e.code}]: ${e.message}`);
-        });
 });
 </script>
 
 <template>
     <div class="flex flex-col gap-4 ml-auto mr-auto w-full">
-        <div class="border rounded border-zinc-500 w-full flex-col">
+        <div class="border rounded border-zinc-500 w-full flex-col bg-zinc-800 bg-opacity-95">
             <h1 class="pl-5 pr-5 pt-2 pb-2">Password</h1>
             <div class="border-t border-zinc-500 p-5">
                 <form @submit.prevent class="">
@@ -69,7 +53,7 @@ onMounted(async () => {
             </div>
         </div>
 
-        <div class="border rounded border-zinc-500 w-full flex-col">
+        <div class="border rounded border-zinc-500 w-full flex-col bg-zinc-800 bg-opacity-95">
             <h1 class="pl-5 pr-5 pt-2 pb-2">Email</h1>
             <div class="border-t border-zinc-500 p-5">
                 <form @submit.prevent class="">
@@ -89,7 +73,7 @@ onMounted(async () => {
             </div>
         </div>
 
-        <div class="border rounded border-red-500 w-full flex-col">
+        <div class="border rounded border-red-500 w-full flex-col bg-zinc-800 bg-opacity-95">
             <h1 class="pl-5 pr-5 pt-2 pb-2">Delete account</h1>
             <div class="border-t border-red-500 p-5">
                 <form @submit.prevent class="">
